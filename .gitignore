@@ -1,0 +1,39 @@
+# Git
+.DS_Store
+Thumbs.db
+*.log
+*.swp
+.idea/
+.vscode/
+*.iml
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+deploy/env/prod.env
+deploy/env/test.env
+**/configs/config.local.yaml
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/*.local
+
+# Backend
+backend/bin/
+backend/**/tmp/
+*.exe
+*.test
+*.out
+coverage.*
+
+# Local sqlite smoke DBs
+.data/
+*.db
+backend/**/*.db
+
+# Deploy artifacts
+*.tgz
+*.tar.gz
+ash-*-bundle/

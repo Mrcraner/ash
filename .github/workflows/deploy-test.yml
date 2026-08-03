@@ -1,0 +1,71 @@
+name: Deploy Test
+
+on:
+  push:
+    branches-ignore: [main]
+
+concurrency:
+  group: deploy-test
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build & pack images
+        run: |
+          TAG=test-${{ github.sha }}
+          docker build -t ash/user-service:$TAG --build-arg SERVICE=user backend
+          docker build -t ash/agent-service:$TAG --build-arg SERVICE=agent backend
+          docker build -t ash/community-service:$TAG --build-arg SERVICE=community backend
+          docker build -t ash/web:$TAG frontend
+          mkdir -p /tmp/ash-test-bundle/configs/{user,agent,community} /tmp/ash-test-bundle/env /tmp/ash-test-bundle/mysql
+          docker save ash/user-service:$TAG ash/agent-service:$TAG ash/community-service:$TAG ash/web:$TAG \
+            | gzip > /tmp/ash-test-bundle/images.tar.gz
+          cp deploy/docker-compose.test.yml /tmp/ash-test-bundle/docker-compose.yml
+          cp deploy/env/test.env.example /tmp/ash-test-bundle/env/test.env.example
+          cp -r deploy/mysql/init /tmp/ash-test-bundle/mysql/
+          cp backend/services/user/configs/config.test.yaml /tmp/ash-test-bundle/configs/user/
+          cp backend/services/agent/configs/config.test.yaml /tmp/ash-test-bundle/configs/agent/
+          cp backend/services/community/configs/config.test.yaml /tmp/ash-test-bundle/configs/community/
+          printf '%s\n' "$TAG" > /tmp/ash-test-bundle/IMAGE_TAG
+          tar -C /tmp -czf /tmp/ash-test-bundle.tgz ash-test-bundle
+
+      - name: Upload bundle to ECS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.ECS_HOST }}
+          username: ${{ secrets.ECS_USER }}
+          key: ${{ secrets.ECS_SSH_KEY }}
+          port: ${{ secrets.ECS_PORT || 22 }}
+          source: /tmp/ash-test-bundle.tgz
+          target: /opt/ash/
+
+      - name: Deploy on ECS
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.ECS_HOST }}
+          username: ${{ secrets.ECS_USER }}
+          key: ${{ secrets.ECS_SSH_KEY }}
+          port: ${{ secrets.ECS_PORT || 22 }}
+          script: |
+            set -euo pipefail
+            mkdir -p /opt/ash/test
+            tar -xzf /opt/ash/ash-test-bundle.tgz -C /opt/ash
+            rsync -a /opt/ash/ash-test-bundle/ /opt/ash/test/
+            cd /opt/ash/test
+            if [ ! -f env/test.env ]; then
+              cp env/test.env.example env/test.env
+              echo "WARN: using example test.env — update secrets on server"
+            fi
+            gunzip -c images.tar.gz | docker load
+            export IMAGE_TAG=$(cat IMAGE_TAG)
+            export IMAGE_REGISTRY=ash
+            docker compose -f docker-compose.yml up -d --remove-orphans
+            docker image prune -f
+            sleep 3
+            curl -fsS http://127.0.0.1:8080/health/user

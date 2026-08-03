@@ -1,0 +1,21 @@
+server:
+  host: "0.0.0.0"
+  port: 8002
+  mode: release
+
+service:
+  name: agent-service
+
+mysql:
+  host: mysql
+  port: 3306
+  user: ash
+  password: change_me_prod_ash
+  database: ash_prod
+  charset: utf8mb4
+  max_idle_conns: 3
+  max_open_conns: 10
+
+log:
+  level: info
+  format: json

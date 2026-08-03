@@ -1,0 +1,83 @@
+# Test stack on same ECS — layout expected under /opt/ash/test
+# Ports: web :8080  |  mysql host :3307 (debug only)
+
+name: ash-test
+
+services:
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    env_file:
+      - ./env/test.env
+    ports:
+      - "3307:3306"
+    volumes:
+      - ash_test_mysql:/var/lib/mysql
+      - ./mysql/init:/docker-entrypoint-initdb.d:ro
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --innodb-buffer-pool-size=96M
+      - --max-connections=40
+    mem_limit: 320m
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [ash-test]
+
+  user-service:
+    image: ${IMAGE_REGISTRY:-ash}/user-service:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    environment:
+      ASH_CONFIG: /app/configs/config.test.yaml
+    volumes:
+      - ./configs/user/config.test.yaml:/app/configs/config.test.yaml:ro
+    depends_on:
+      mysql:
+        condition: service_healthy
+    mem_limit: 96m
+    networks: [ash-test]
+
+  agent-service:
+    image: ${IMAGE_REGISTRY:-ash}/agent-service:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    environment:
+      ASH_CONFIG: /app/configs/config.test.yaml
+    volumes:
+      - ./configs/agent/config.test.yaml:/app/configs/config.test.yaml:ro
+    mem_limit: 96m
+    networks: [ash-test]
+
+  community-service:
+    image: ${IMAGE_REGISTRY:-ash}/community-service:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    environment:
+      ASH_CONFIG: /app/configs/config.test.yaml
+    volumes:
+      - ./configs/community/config.test.yaml:/app/configs/config.test.yaml:ro
+    depends_on:
+      mysql:
+        condition: service_healthy
+    mem_limit: 96m
+    networks: [ash-test]
+
+  web:
+    image: ${IMAGE_REGISTRY:-ash}/web:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    depends_on:
+      - user-service
+      - agent-service
+      - community-service
+    mem_limit: 64m
+    networks: [ash-test]
+
+networks:
+  ash-test:
+    driver: bridge
+
+volumes:
+  ash_test_mysql:

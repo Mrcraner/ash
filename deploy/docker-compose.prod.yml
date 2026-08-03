@@ -1,0 +1,82 @@
+# Production stack on ECS — layout expected under /opt/ash/prod
+# Ports: web :80  |  MySQL internal only
+# Prefer Aliyun RDS later: point config.prod.yaml mysql.host to RDS and remove mysql service.
+
+name: ash-prod
+
+services:
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    env_file:
+      - ./env/prod.env
+    volumes:
+      - ash_prod_mysql:/var/lib/mysql
+      - ./mysql/init:/docker-entrypoint-initdb.d:ro
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --innodb-buffer-pool-size=128M
+      - --max-connections=50
+    mem_limit: 384m
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [ash-prod]
+
+  user-service:
+    image: ${IMAGE_REGISTRY:-ash}/user-service:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    environment:
+      ASH_CONFIG: /app/configs/config.prod.yaml
+    volumes:
+      - ./configs/user/config.prod.yaml:/app/configs/config.prod.yaml:ro
+    depends_on:
+      mysql:
+        condition: service_healthy
+    mem_limit: 96m
+    networks: [ash-prod]
+
+  agent-service:
+    image: ${IMAGE_REGISTRY:-ash}/agent-service:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    environment:
+      ASH_CONFIG: /app/configs/config.prod.yaml
+    volumes:
+      - ./configs/agent/config.prod.yaml:/app/configs/config.prod.yaml:ro
+    mem_limit: 96m
+    networks: [ash-prod]
+
+  community-service:
+    image: ${IMAGE_REGISTRY:-ash}/community-service:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    environment:
+      ASH_CONFIG: /app/configs/config.prod.yaml
+    volumes:
+      - ./configs/community/config.prod.yaml:/app/configs/config.prod.yaml:ro
+    depends_on:
+      mysql:
+        condition: service_healthy
+    mem_limit: 96m
+    networks: [ash-prod]
+
+  web:
+    image: ${IMAGE_REGISTRY:-ash}/web:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - user-service
+      - agent-service
+      - community-service
+    mem_limit: 64m
+    networks: [ash-prod]
+
+networks:
+  ash-prod:
+    driver: bridge
+
+volumes:
+  ash_prod_mysql:

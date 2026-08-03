@@ -1,0 +1,21 @@
+server:
+  host: "0.0.0.0"
+  port: 8001
+  mode: release
+
+service:
+  name: user-service
+
+mysql:
+  host: mysql
+  port: 3306
+  user: ash
+  password: change_me_test_ash
+  database: ash_test
+  charset: utf8mb4
+  max_idle_conns: 3
+  max_open_conns: 10
+
+log:
+  level: debug
+  format: json

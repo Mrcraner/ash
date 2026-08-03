@@ -1,0 +1,97 @@
+# Local development stack (requires Docker)
+# Usage: docker compose -f deploy/docker-compose.yml up -d --build
+
+name: ash-local
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: ash-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root_dev_password
+      MYSQL_DATABASE: ash_dev
+      MYSQL_USER: ash
+      MYSQL_PASSWORD: ash_dev_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - ash_mysql_data:/var/lib/mysql
+      - ./mysql/init:/docker-entrypoint-initdb.d:ro
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --innodb-buffer-pool-size=128M
+      - --max-connections=50
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot_dev_password"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  user-service:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+      args:
+        SERVICE: user
+    container_name: ash-user
+    restart: unless-stopped
+    environment:
+      ASH_CONFIG: /app/configs/config.docker.yaml
+    volumes:
+      - ../backend/services/user/configs/config.docker.yaml:/app/configs/config.docker.yaml:ro
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "8001:8001"
+
+  agent-service:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+      args:
+        SERVICE: agent
+    container_name: ash-agent
+    restart: unless-stopped
+    environment:
+      ASH_CONFIG: /app/configs/config.docker.yaml
+    volumes:
+      - ../backend/services/agent/configs/config.docker.yaml:/app/configs/config.docker.yaml:ro
+    ports:
+      - "8002:8002"
+
+  community-service:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+      args:
+        SERVICE: community
+    container_name: ash-community
+    restart: unless-stopped
+    environment:
+      ASH_CONFIG: /app/configs/config.docker.yaml
+    volumes:
+      - ../backend/services/community/configs/config.docker.yaml:/app/configs/config.docker.yaml:ro
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "8003:8003"
+
+  web:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    container_name: ash-web
+    restart: unless-stopped
+    depends_on:
+      - user-service
+      - agent-service
+      - community-service
+    ports:
+      - "5173:80"
+
+volumes:
+  ash_mysql_data:

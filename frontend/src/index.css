@@ -1,0 +1,33 @@
+@import "tailwindcss";
+
+:root {
+  --ash-cyan: #00e5ff;
+  --ash-cyan-dim: rgba(0, 229, 255, 0.35);
+  --ash-bg: #02060c;
+  --ash-panel: rgba(4, 16, 28, 0.55);
+  --ash-danger: #ff3b5c;
+  color-scheme: dark;
+  font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: var(--ash-bg);
+  color: #e8f7ff;
+}
+
+button {
+  font: inherit;
+}
