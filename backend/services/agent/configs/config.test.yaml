@@ -16,6 +16,11 @@ mysql:
   max_idle_conns: 3
   max_open_conns: 10
 
+auth:
+  jwt_secret: ash_dev_jwt_secret_change_me
+  access_cookie_name: ash_at
+  access_ttl_minutes: 15
+
 log:
   level: debug
   format: json

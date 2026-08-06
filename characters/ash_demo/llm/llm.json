@@ -1,0 +1,7 @@
+{
+  "base_model": "qwen3-8b",
+  "quant": "q4_k_m",
+  "temperature": 0.7,
+  "adapter": null,
+  "notes": "Optional LoRA path goes in llm/adapter.safetensors later"
+}

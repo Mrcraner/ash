@@ -9,10 +9,39 @@ import (
 
 // Config holds shared service configuration loaded from YAML + env overrides.
 type Config struct {
-	Server   ServerConfig   `mapstructure:"server"`
-	MySQL    MySQLConfig    `mapstructure:"mysql"`
-	Log      LogConfig      `mapstructure:"log"`
-	Service  ServiceConfig  `mapstructure:"service"`
+	Server  ServerConfig  `mapstructure:"server"`
+	MySQL   MySQLConfig   `mapstructure:"mysql"`
+	Log     LogConfig     `mapstructure:"log"`
+	Service ServiceConfig `mapstructure:"service"`
+	Auth    AuthConfig    `mapstructure:"auth"`
+	Local   LocalConfig   `mapstructure:"local"`
+}
+
+// LocalConfig is used by ash-runtime (Pro/Cinema local client process).
+type LocalConfig struct {
+	// CharactersDir is the Character Pack root (relative to process cwd or absolute).
+	CharactersDir string `mapstructure:"characters_dir"`
+}
+
+// AuthConfig controls cookie sessions (user-service) and short-lived access JWTs.
+type AuthConfig struct {
+	CookieName     string `mapstructure:"cookie_name"`
+	CookiePath     string `mapstructure:"cookie_path"`
+	CookieDomain   string `mapstructure:"cookie_domain"`
+	CookieSecure   bool   `mapstructure:"cookie_secure"`
+	CookieSameSite string `mapstructure:"cookie_same_site"` // lax | strict | none
+	SessionTTLDays int    `mapstructure:"session_ttl_days"`
+	// LastSeenMinIntervalSec throttles session last_seen writes.
+	LastSeenMinIntervalSec int `mapstructure:"last_seen_min_interval_sec"`
+	// LoginRateLimitPerMin / RegisterRateLimitPerMin are per-IP sliding windows.
+	LoginRateLimitPerMin    int `mapstructure:"login_rate_limit_per_min"`
+	RegisterRateLimitPerMin int `mapstructure:"register_rate_limit_per_min"`
+	// JWTSecret signs short-lived access tokens for agent/community (HS256).
+	JWTSecret string `mapstructure:"jwt_secret"`
+	// AccessCookieName holds the short JWT (HttpOnly). Empty → ash_at.
+	AccessCookieName string `mapstructure:"access_cookie_name"`
+	// AccessTTLMinutes is access JWT lifetime (default 15).
+	AccessTTLMinutes int `mapstructure:"access_ttl_minutes"`
 }
 
 type ServerConfig struct {

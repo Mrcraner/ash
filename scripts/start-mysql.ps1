@@ -35,7 +35,9 @@ if (-not $exists) {
 
 Write-Host "Waiting for MySQL..."
 for ($i = 0; $i -lt 40; $i++) {
-  docker exec ash-mysql-dev mysqladmin ping -h 127.0.0.1 -uroot -proot_dev_password --silent 2>$null
+  # Keep stderr inside the container: PowerShell turns native stderr into a
+  # terminating error under $ErrorActionPreference = "Stop".
+  docker exec ash-mysql-dev sh -c "mysqladmin ping -h 127.0.0.1 -uroot -proot_dev_password --silent >/dev/null 2>&1"
   if ($LASTEXITCODE -eq 0) {
     Write-Host "MySQL is ready on localhost:3306 (db=ash_dev user=ash)" -ForegroundColor Green
     exit 0

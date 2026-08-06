@@ -39,7 +39,7 @@ func main() {
 
 	postSvc := service.NewPostService(db)
 	postH := handler.NewPostHandler(postSvc)
-	r := router.New(log, postH)
+	r := router.New(log, postH, cfg.Auth)
 
 	addr := cfg.Server.Addr()
 	log.Sugar().Infow("community-service starting", "addr", addr)

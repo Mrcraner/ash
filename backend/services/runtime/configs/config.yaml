@@ -1,0 +1,25 @@
+server:
+  host: "127.0.0.1"
+  port: 18765
+  mode: debug
+
+service:
+  name: ash-runtime
+
+# Unused by runtime today; kept so shared config.Load stays uniform.
+mysql:
+  driver: sqlite
+  sqlite_path: ":memory:"
+
+auth:
+  jwt_secret: ash_dev_jwt_secret_change_me
+  access_cookie_name: ash_at
+  access_ttl_minutes: 15
+
+local:
+  # Relative to process cwd when started from backend/services/runtime
+  characters_dir: "../../../characters"
+
+log:
+  level: debug
+  format: console

@@ -1,0 +1,6 @@
+{
+  "avatar_id": "ash_demo_wav2lip",
+  "model": "wav2lip",
+  "idle_video": null,
+  "notes": "P0 placeholder — LiveTalking avatar assets land in P2"
+}

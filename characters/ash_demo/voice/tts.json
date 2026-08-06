@@ -1,0 +1,6 @@
+{
+  "engine": "local",
+  "voice_id": "ash_demo_ref",
+  "sample_rate": 24000,
+  "notes": "P0 placeholder — wire GPT-SoVITS / Qwen3-TTS in P2"
+}

@@ -16,7 +16,7 @@
 | 音效 | Howler | 电流音效触发 |
 | 样式 | Tailwind CSS v4 | HUD 叠层快速搭建 |
 
-> 业务逻辑（MediaPipe 推理循环、手势阈值切地形、电流音效触发等）仅预留模块骨架，未实现。
+> 业务逻辑（MediaPipe 推理循环、手势缩放切地形、电流音效触发等）仅预留模块骨架，未实现。
 
 ### 后端 `backend/`
 
@@ -24,9 +24,12 @@
 
 | 服务 | 端口（本地） | 说明 |
 |------|-------------|------|
-| `user-service` | 8001 | 登录/注册/个人中心（待接口）+ Hello MySQL 读写冒烟 |
-| `agent-service` | 8002 | 大模型/语音 Agent（待接入） |
-| `community-service` | 8003 | 社区交流（待接口）+ Posts MySQL 读写冒烟 |
+| `user-service` | 8001 | 登录/注册/个人中心 + JWT |
+| `agent-service` | 8002 | 云侧 Agent 占位（后续能力下沉见 runtime） |
+| `community-service` | 8003 | 社区交流 |
+| `ash-runtime` | **18765**（仅 `127.0.0.1`） | Pro/Cinema **本机编排空壳**（P0：`/health` + `/doctor`） |
+
+Pro/Cinema 架构规格：[`docs/specs/pro-client-architecture.md`](docs/specs/pro-client-architecture.md)。
 
 数据库：**MySQL 8**。生产/测试库名分离：`ash_prod` / `ash_test`（本地开发 `ash_dev`）。云数据库购买后，只需改各环境 `config.*.yaml` 的 `mysql.host`。
 
@@ -34,22 +37,20 @@
 
 ```text
 ash/
-├── frontend/                 # Vite Web（Nginx 镜像打包）
+├── frontend/                 # Vite Web（后续 Electron 加载同一套 UI）
+├── characters/               # Character Pack（样例 ash_demo）
+├── docs/specs/               # 产品/架构规格
 ├── backend/
 │   ├── pkg/                  # 共享：config / database / middleware / response / logger
 │   ├── services/
 │   │   ├── user/
 │   │   ├── agent/
-│   │   └── community/
+│   │   ├── community/
+│   │   └── runtime/          # ash-runtime（本机 Pro/Cinema）
 │   └── Dockerfile            # 多阶段静态编译，ARG SERVICE=user|agent|community
 ├── deploy/
-│   ├── docker-compose.yml        # 本地全栈
-│   ├── docker-compose.prod.yml   # 生产（宿主机 :80）
-│   ├── docker-compose.test.yml   # 测试（宿主机 :8080）
-│   ├── env/*.env.example
-│   └── mysql/init/
-├── scripts/                  # MySQL / smoke
-└── .github/workflows/        # CI + prod/test 部署流水线
+├── scripts/                  # MySQL / smoke / runtime-smoke
+└── .github/workflows/
 ```
 
 ## 本地开发
@@ -70,12 +71,11 @@ powershell -ExecutionPolicy Bypass -File .\scripts\start-mysql.ps1
 
 账号：`ash` / `ash_dev_password`，库 `ash_dev`，端口 `3306`。此时直接使用各服务默认 `configs/config.yaml`（MySQL）。
 
-**本机暂无 Docker/MySQL 时：** 可使用 `configs/config.local.yaml`（SQLite）仅作本地冒烟，部署环境仍为 MySQL：
+**本机暂用 Docker/MySQL 时：** 可使用 `configs/config.local.yaml`（SQLite）仅作本地冒烟，部署环境仍为 MySQL：
 
 ```powershell
 $env:ASH_CONFIG="configs/config.local.yaml"
 ```
-
 
 ### 2. 启动后端（三个终端）
 
@@ -84,6 +84,17 @@ cd backend\services\user; go run .\cmd
 cd backend\services\agent; go run .\cmd
 cd backend\services\community; go run .\cmd
 ```
+
+本机 Pro runtime（P0，不依赖 MySQL）：
+
+```powershell
+cd backend\services\runtime; go run .\cmd
+# 或: make run-runtime
+# 冒烟: make smoke-runtime
+```
+
+- `GET http://127.0.0.1:18765/health`
+- `GET http://127.0.0.1:18765/api/local/v1/doctor`
 
 ### 3. 启动前端
 
@@ -137,10 +148,15 @@ mkdir -p /opt/ash/prod/env /opt/ash/test/env
 
 镜像策略：CI 构建 → `docker save` 打包上传 ECS → `docker load` + `docker compose up`（无外部镜像仓库，适合当前成本约束；日后可换 ACR）。
 
-## 下一步（等你定接口后）
+## 下一步（路线图）
 
-1. 用户服务：注册登录、JWT/Session、个人中心  
-2. Agent：对话 / 语音模型适配层  
-3. 社区：帖子、评论、实时在线等  
-4. 前端：MediaPipe 骨架叠加、手势（滑/捏/点）、阈值切地形、山丘高度、电流音效  
-5. 云数据库 RDS 替换容器 MySQL；用户量上来后再评估 K8s
+详见 [`docs/specs/pro-client-architecture.md`](docs/specs/pro-client-architecture.md) §13。
+
+| 阶段 | 内容 |
+|------|------|
+| **P0（已起步）** | 规格 + `characters/ash_demo` + `ash-runtime` health/doctor |
+| **P1** | Electron 壳加载现前端；云登录打通 |
+| **P2** | 本地 Python 推理 + LiveTalking WebRTC |
+| **P3+** | 多角色 / 记忆 / 显存分档 / UE Cinema |
+
+并行仍可推进：社区能力、手势 HUD、RDS 等 Web 普通档功能。

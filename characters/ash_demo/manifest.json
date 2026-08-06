@@ -1,0 +1,10 @@
+{
+  "character_id": "ash_demo",
+  "display_name": "ASH Demo",
+  "version": "0.1.0",
+  "runtime_compat": ">=0.1.0",
+  "llm_base": "qwen3-8b",
+  "supports": ["livetalking"],
+  "size_bytes": 0,
+  "preview_image": null
+}

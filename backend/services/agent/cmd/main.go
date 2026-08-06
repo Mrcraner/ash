@@ -23,7 +23,7 @@ func main() {
 	defer log.Sync() //nolint:errcheck
 
 	gin.SetMode(cfg.Server.Mode)
-	r := router.New(log)
+	r := router.New(log, cfg.Auth)
 
 	addr := cfg.Server.Addr()
 	log.Sugar().Infow("agent-service starting", "addr", addr)

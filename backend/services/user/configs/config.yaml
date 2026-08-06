@@ -17,6 +17,20 @@ mysql:
   max_idle_conns: 5
   max_open_conns: 20
 
+auth:
+  cookie_name: ash_sid
+  cookie_path: /
+  cookie_domain: ""
+  cookie_secure: false
+  cookie_same_site: lax
+  session_ttl_days: 365
+  last_seen_min_interval_sec: 300
+  login_rate_limit_per_min: 20
+  register_rate_limit_per_min: 10
+  jwt_secret: ash_dev_jwt_secret_change_me
+  access_cookie_name: ash_at
+  access_ttl_minutes: 15
+
 log:
   level: debug
   format: console

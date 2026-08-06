@@ -33,13 +33,21 @@ func main() {
 	if err != nil {
 		panic(fmt.Errorf("mysql: %w", err))
 	}
-	if err := db.AutoMigrate(&model.HelloMessage{}); err != nil {
+	if err := db.AutoMigrate(&model.HelloMessage{}, &model.User{}, &model.Session{}); err != nil {
 		panic(fmt.Errorf("migrate: %w", err))
 	}
 
 	helloSvc := service.NewHelloService(db)
 	helloH := handler.NewHelloHandler(helloSvc)
-	r := router.New(log, helloH)
+
+	authSvc := service.NewAuthService(db, cfg.Auth)
+	authH := handler.NewAuthHandler(authSvc, cfg.Auth)
+
+	cookieName := cfg.Auth.CookieName
+	if cookieName == "" {
+		cookieName = "ash_sid"
+	}
+	r := router.New(log, helloH, authH, authSvc, cookieName)
 
 	addr := cfg.Server.Addr()
 	log.Sugar().Infow("user-service starting", "addr", addr)

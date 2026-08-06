@@ -45,7 +45,10 @@ export function DevStatusPanel() {
   }, [])
 
   return (
-    <div className="pointer-events-none absolute bottom-4 right-4 z-20 rounded border border-[var(--ash-cyan-dim)] bg-[var(--ash-panel)] px-3 py-2 font-mono text-xs backdrop-blur">
+    <div
+      className="pointer-events-none absolute bottom-4 right-4 z-20 rounded border border-[var(--ash-cyan-dim)] bg-[var(--ash-panel)] px-3 py-2 font-mono text-xs backdrop-blur"
+      data-hud-interactive
+    >
       <div className="mb-1 text-[var(--ash-cyan)]">API SMOKE</div>
       <div>user: {state.user}</div>
       <div>agent: {state.agent}</div>
